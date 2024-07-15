@@ -8,6 +8,7 @@ type AwsConfig struct {
 }
 
 type Config struct {
-	AWS            AwsConfig
-	RepositoryList []string
+	AWS                 AwsConfig
+	RepositoryList      []string
+	ImagesRetentionDays int
 }

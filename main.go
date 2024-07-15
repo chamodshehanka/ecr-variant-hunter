@@ -11,6 +11,11 @@ func main() {
 		fmt.Println("Error loading config: ", err.Error())
 		return
 	}
+
+	// Example: List all repositories
+	for _, repo := range config.EnvValues.RepositoryList {
+		fmt.Println(repo)
+	}
 	// Initialize AWS session
 	//sess, _ := session.NewSession(&aws.Config{
 	//	Region: aws.String("us-west-2"),

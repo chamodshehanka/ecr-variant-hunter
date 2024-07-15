@@ -5,11 +5,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"os"
+	"strconv"
 	"strings"
 )
 
-var config Config
-
+var EnvValues Config
 var requiredEnvs = [...]string{
 	"AWS_REGION",
 	"AWS_ACCESS_KEY_ID",
@@ -18,13 +18,14 @@ var requiredEnvs = [...]string{
 }
 
 func LoadConfig() error {
-	config = Config{
+	EnvValues = Config{
 		AWS: AwsConfig{
-			Region:          os.Getenv("AWS_REGION"),
-			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
-			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-			RegistryURL:     os.Getenv("AWS_REGISTRY_URL"),
+			Region:          getEnv("AWS_REGION"),
+			AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID"),
+			SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY"),
+			RegistryURL:     getEnv("AWS_REGISTRY_URL"),
 		},
+		ImagesRetentionDays: getNumberEnv("IMAGES_RETENTION_DAYS"),
 	}
 
 	repoList := os.Getenv("ECR_REPOS_LIST")
@@ -32,10 +33,15 @@ func LoadConfig() error {
 		repos := strings.Split(repoList, ",")
 
 		for i, repo := range repos {
-			repos[i] = fmt.Sprintf("%s/%s", config.AWS.RegistryURL, repo)
+			repos[i] = fmt.Sprintf("%s/%s", EnvValues.AWS.RegistryURL, repo)
 		}
 
-		config.RepositoryList = repos
+		EnvValues.RepositoryList = repos
+	}
+
+	err := ensureRequiredEnvsAreAvailable()
+	if err != nil {
+		logrus.Fatalf("Error loading config: %s", err.Error())
 	}
 
 	logrus.Infoln("Config loaded successfully!")
@@ -61,4 +67,17 @@ func getEnv(key string) string {
 		return value
 	}
 	return ""
+}
+
+func getNumberEnv(key string) int {
+	envValue := getEnv(key)
+	if envValue != "" {
+		number, err := strconv.Atoi(envValue)
+		if err != nil {
+			logrus.Fatalf("Error converting environment variable '%s' value to int: %s", key, err)
+		}
+		return number
+	}
+
+	return 0
 }
