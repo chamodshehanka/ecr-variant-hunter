@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/chamodshehanka/ecr-variant-hunter/internal/config"
+	"github.com/chamodshehanka/ecr-variant-hunter/services"
 )
 
 func main() {
@@ -12,17 +13,5 @@ func main() {
 		return
 	}
 
-	// Example: List all repositories
-	for _, repo := range config.EnvValues.RepositoryList {
-		fmt.Println(repo)
-	}
-	// Initialize AWS session
-	//sess, _ := session.NewSession(&aws.Config{
-	//	Region: aws.String("us-west-2"),
-	//})
-	//
-	//svc := ecr.New(sess)
-
-	// Example: Iterate over repoNames and delete outdated images
-	// This is a simplified example. Implement your logic for listing and deleting images.
+	services.DeleteOutdatedImages()
 }

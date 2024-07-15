@@ -18,6 +18,14 @@ var requiredEnvs = [...]string{
 }
 
 func LoadConfig() error {
+	if err := godotenv.Load(); err != nil {
+		logrus.Fatalf("Error loading .env file: %s", err)
+	}
+
+	if err := ensureRequiredEnvsAreAvailable(); err != nil {
+		logrus.Fatalf("Error ensuring required environment variables: %s", err)
+	}
+
 	EnvValues = Config{
 		AWS: AwsConfig{
 			Region:          getEnv("AWS_REGION"),
@@ -37,11 +45,6 @@ func LoadConfig() error {
 		}
 
 		EnvValues.RepositoryList = repos
-	}
-
-	err := ensureRequiredEnvsAreAvailable()
-	if err != nil {
-		logrus.Fatalf("Error loading config: %s", err.Error())
 	}
 
 	logrus.Infoln("Config loaded successfully!")
