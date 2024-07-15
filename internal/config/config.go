@@ -4,7 +4,6 @@ type AwsConfig struct {
 	Region          string
 	AccessKeyID     string
 	SecretAccessKey string
-	RegistryURL     string
 }
 
 type Config struct {
