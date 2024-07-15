@@ -1,83 +1,38 @@
 package services
 
 import (
-	"github.com/aws/aws-sdk-go/service/ecr"
+	"context"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/chamodshehanka/ecr-variant-hunter/internal/config"
 	"github.com/sirupsen/logrus"
 	"sync"
-	"time"
 )
 
-func DeleteOutdatedImages() {
+func DeleteOutdatedImages(ecrClient *ecr.Client) {
 	var wg sync.WaitGroup
+	reposList := config.EnvValues.RepositoryList
+	olderThanDays := config.EnvValues.ImagesRetentionDays
 
-	ecrService, err := GetECRService()
-	if err != nil {
-		logrus.Fatalf("Error creating ECR service: %s", err)
+	if len(reposList) == 0 {
+		logrus.Fatalf("No repositories found in the configuration")
 		return
 	}
 
-	for _, repo := range config.EnvValues.RepositoryList {
-		logrus.Infof("Deleting old images from repository %s", repo)
+	if olderThanDays == 0 {
+		logrus.Fatalf("No retention days found in the configuration")
+		return
+	}
+
+	for _, repo := range reposList {
+		logrus.Infof("Deleting outdated images for repository: %s", repo)
 		wg.Add(1)
-
-		repoCopy := repo // Create a copy of repo for the goroutine
-		go func(repoName string) {
+		go func(repositoryName string) {
 			defer wg.Done()
-			deleteOldImages(ecrService, &repoName)
-		}(repoCopy)
+			ctx := context.TODO()
+			DeleteECROldImages(ctx, ecrClient, repositoryName, olderThanDays)
+		}(repo)
 	}
 
-	wg.Wait() // Wait for all goroutines to finish
-}
-
-func deleteOldImages(svc *ecr.ECR, repoName *string) {
-	logrus.Infof("Deleting old images from repository %s", *repoName)
-	now := time.Now()
-
-	imageRetentionDays := config.EnvValues.ImagesRetentionDays
-	if imageRetentionDays == 0 {
-		imageRetentionDays = 14 // Set default value to 14 if not specified
-	}
-	cutoffDate := now.AddDate(0, 0, -imageRetentionDays)
-
-	listResp, err := svc.ListImages(&ecr.ListImagesInput{
-		RepositoryName: repoName,
-	})
-	if err != nil {
-		logrus.Errorf("Error listing images for repository %s: %s\n", *repoName, err)
-		return
-	}
-
-	var oldImageIds []*ecr.ImageIdentifier
-	for _, imageId := range listResp.ImageIds {
-		descResp, err := svc.DescribeImages(&ecr.DescribeImagesInput{
-			RepositoryName: repoName,
-			ImageIds:       []*ecr.ImageIdentifier{imageId},
-		})
-		if err != nil {
-			logrus.Errorf("Error describing image %s in repository %s: %s\n", *imageId.ImageDigest, *repoName, err)
-			continue
-		}
-
-		for _, imageDetail := range descResp.ImageDetails {
-			if imageDetail.ImagePushedAt.Before(cutoffDate) {
-				oldImageIds = append(oldImageIds, &ecr.ImageIdentifier{
-					ImageDigest: imageDetail.ImageDigest,
-				})
-			}
-		}
-	}
-
-	if len(oldImageIds) > 0 {
-		_, err = svc.BatchDeleteImage(&ecr.BatchDeleteImageInput{
-			RepositoryName: repoName,
-			ImageIds:       oldImageIds,
-		})
-		if err != nil {
-			logrus.Errorf("Error deleting images from repository %s: %s\n", *repoName, err)
-			return
-		}
-		logrus.Infof("Deleted %d images from repository %s\n", len(oldImageIds), *repoName)
-	}
+	wg.Wait()
+	logrus.Info("Completed deleting outdated images for all repositories")
 }

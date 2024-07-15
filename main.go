@@ -13,5 +13,6 @@ func main() {
 		return
 	}
 
-	services.DeleteOutdatedImages()
+	ecrClient := services.GetECRConfig()
+	services.DeleteOutdatedImages(ecrClient)
 }

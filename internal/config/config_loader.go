@@ -41,7 +41,7 @@ func LoadConfig() error {
 		repos := strings.Split(repoList, ",")
 
 		for i, repo := range repos {
-			repos[i] = fmt.Sprintf("%s/%s", EnvValues.AWS.RegistryURL, repo)
+			repos[i] = repo
 		}
 
 		EnvValues.RepositoryList = repos
