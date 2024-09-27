@@ -18,8 +18,13 @@ var requiredEnvs = [...]string{
 }
 
 func LoadConfig() error {
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("Error loading .env file: %s", err)
+	if _, err := os.Stat(".env"); err == nil {
+		err := godotenv.Load()
+		if err != nil {
+			logrus.Fatalf("Error loading .env file")
+		}
+	} else if !os.IsNotExist(err) {
+		logrus.Fatalf("Error checking .env file: %v", err)
 	}
 
 	if err := ensureRequiredEnvsAreAvailable(); err != nil {
@@ -31,7 +36,6 @@ func LoadConfig() error {
 			Region:          getEnv("AWS_REGION"),
 			AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY"),
-			RegistryURL:     getEnv("AWS_REGISTRY_URL"),
 		},
 		ImagesRetentionDays: getNumberEnv("IMAGES_RETENTION_DAYS"),
 	}
