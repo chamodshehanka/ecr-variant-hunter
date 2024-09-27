@@ -21,7 +21,7 @@ func LoadConfig() error {
 	if _, err := os.Stat(".env"); err == nil {
 		err := godotenv.Load()
 		if err != nil {
-			logrus.Fatalf("Error loading .env file")
+			logrus.Errorf("Error loading .env file: [ERROR] %v", err)
 		}
 	} else if !os.IsNotExist(err) {
 		logrus.Fatalf("Error checking .env file: %v", err)
