@@ -56,11 +56,6 @@ func LoadConfig() error {
 }
 
 func ensureRequiredEnvsAreAvailable() error {
-	err := godotenv.Load()
-	if err != nil {
-		logrus.Fatalf("Error loading .env file")
-	}
-
 	for _, env := range requiredEnvs {
 		if getEnv(env) == "" {
 			return fmt.Errorf("fatal: required environment variable '%s' not found", env)
